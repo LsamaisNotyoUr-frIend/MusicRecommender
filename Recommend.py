@@ -1,6 +1,7 @@
 import os
 import random
-
+import tkinter as tk
+from tkinter import messagebox
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
@@ -45,13 +46,13 @@ class MusicRecommendationSystem:
         ]
 
     def populate_genres_with_songs(self, genre: Genre):
-        song_list = self.fetch_songs_from_spotify(genre.name, 10)
+        song_list = self.fetch_songs_from_spotify(genre.name, 20)
         return song_list
 
     def populate_genres_with_random_songs(self):
         for genre in self.genres:
             random_genre = self.get_random_genre(random.randint(1, 5))
-            song_list = self.fetch_songs_from_spotify(random_genre, 5)
+            song_list = self.fetch_songs_from_spotify(random_genre, 10)
             genre.add_random_songs(song_list)
 
     @staticmethod
@@ -70,7 +71,7 @@ class MusicRecommendationSystem:
 
     @staticmethod
     def return_ramdom_song_list(list_of_songs: list):
-        return random.sample(list_of_songs, 4)
+        return random.sample(list_of_songs, 5)
 
     @staticmethod
     def get_random_genre(number: int):
@@ -88,15 +89,55 @@ class MusicRecommendationSystem:
         return genre
 
 
+class MusicApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.recommend_button = None
+        self.label = None
+        self.back_button = None
+        self.text_box = None
+        self.result_label = None
+        self.title("Music Recommendation System")
+        self.geometry("500x400")
+        self.recommender = MusicRecommendationSystem()
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Label for mood input
+        self.label = tk.Label(self, text="Enter your mood or preference:")
+        self.label.pack(pady=10)
+
+        # Textbox for user input
+        self.text_box = tk.Text(self, height=5, width=50)
+        self.text_box.pack(pady=10)
+
+        # Recommend Button
+        self.recommend_button = tk.Button(self, text="Recommend", command=self.recommend_songs)
+        self.recommend_button.pack(pady=10)
+
+        # Back Button
+        self.back_button = tk.Button(self, text="Back", command=self.reset_ui)
+        self.back_button.pack(pady=10)
+
+        # Label for displaying recommendations
+        self.result_label = tk.Label(self, text="", justify="left")
+        self.result_label.pack(pady=10)
+
+    def recommend_songs(self):
+        user_mood = self.text_box.get("1.0", "end-1c").strip()
+        if not user_mood:
+            messagebox.showwarning("Input Error", "Please enter your mood or preference.")
+            return
+
+        songs_recommended = self.recommender.recommend_songs(user_mood)
+        recommendations = "\n".join(songs_recommended)
+        self.result_label.config(text=f"Recommended Songs:\n{recommendations}")
+
+    def reset_ui(self):
+        self.text_box.delete("1.0", "end")
+        self.result_label.config(text="")
+
+
 if __name__ == "__main__":
-    spotify_client_id = "68fd62c50a074e2dbebb11c83f98dac5"
-    spotify_client_secret = "ee5dd23b0b274446a713a6a20966cbab"
-
-    recommender = MusicRecommendationSystem()
-
-    user_input = input("Describe your mood or preference: ")
-    songs = recommender.recommend_songs(user_input.strip())
-
-    print("Recommended songs:")
-    for song in songs:
-        print(song)
+    app = MusicApp()
+    app.mainloop()
